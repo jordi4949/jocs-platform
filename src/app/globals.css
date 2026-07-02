@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #13201a;
+  background: #f7fbf4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(122, 196, 107, 0.22), transparent 34rem),
+    linear-gradient(135deg, #f7fbf4 0%, #edf7f0 48%, #fff7ed 100%);
+  color: #13201a;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
