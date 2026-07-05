@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { PagePanel } from "@/components/page-panel";
+import { SkinShop } from "@/games/snake/components/SkinShop";
 
 export default function ShopPage() {
   return (
@@ -7,8 +8,10 @@ export default function ShopPage() {
       <PagePanel
         eyebrow="Tienda"
         title="Aspectos y mejoras"
-        description="Espacio preparado para skins, colores y objetos desbloqueables cuando el juego tenga progresión."
-      />
+        description="Compra y selecciona skins con las monedas ganadas jugando en local."
+      >
+        <SkinShop />
+      </PagePanel>
     </AppShell>
   );
 }
