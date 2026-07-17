@@ -54,23 +54,27 @@ const BOT_CONFIGS: Array<{
   headType?: BotHeadType;
   headImage?: string;
   soundSrc?: string;
+  bodyColor?: string;
+  secondaryColor?: string;
 }> = [
   {
     name: "Bimba",
     difficulty: "hard",
     personality: "aggressive",
-    skinId: "fire_snake",
+    skinId: "classic_green",
     headType: "image",
     headImage: "/skins/family/bimba-head-game.png",
     soundSrc: "/sounds/dog-bark.mp3",
+    bodyColor: "#a3e635",
+    secondaryColor: "#fde047",
   },
   {
     name: "Jordi",
     difficulty: "hard",
     personality: "smart",
     skinId: "ice_snake",
-    headType: "image",
-    headImage: "/skins/family/jordi-head-game.png",
+    bodyColor: "#60a5fa",
+    secondaryColor: "#86efac",
   },
   { name: "Pipo", difficulty: "easy", personality: "normal", skinId: "classic_green" },
   { name: "Nina", difficulty: "easy", personality: "normal", skinId: "robot_snake" },
@@ -374,6 +378,33 @@ function getBotIntent(
   const playerDistance = distance(head, playerSnake[0]);
   const botIsBigger = bot.snake.length >= playerSnake.length + 4;
   const botIsSmaller = bot.snake.length + 3 < playerSnake.length;
+  const bimba = allBots.find((candidate) => candidate.name === "Bimba");
+
+  if (bot.personality === "smart" && bimba && bimba.id !== bot.id && distance(head, bimba.snake[0]) < 520) {
+    return {
+      targetAngle: chooseNearestTargetAngle(
+        bot.angle,
+        Math.atan2(head.y - bimba.snake[0].y, head.x - bimba.snake[0].x),
+      ),
+      turboActive: true,
+    };
+  }
+
+  if (bot.personality === "aggressive" && playerDistance < profile.playerHuntRadius * 1.2) {
+    const cutDistance = bot.name === "Bimba" ? 280 : 200;
+    const interceptPoint = {
+      x: playerSnake[0].x + Math.cos(playerAngle) * cutDistance,
+      y: playerSnake[0].y + Math.sin(playerAngle) * cutDistance,
+    };
+
+    return {
+      targetAngle: chooseNearestTargetAngle(
+        bot.angle,
+        Math.atan2(interceptPoint.y - head.y, interceptPoint.x - head.x),
+      ),
+      turboActive: bot.name === "Bimba" || playerDistance < profile.playerHuntRadius * 0.75,
+    };
+  }
 
   if (bot.difficulty === "hard" && botIsSmaller && playerDistance < profile.playerHuntRadius * 0.8) {
     return {
@@ -411,6 +442,7 @@ function getBotIntent(
       ),
       turboActive:
         nearestFood.kind === "death" ||
+        bot.personality === "aggressive" ||
         (bot.difficulty !== "easy" && foodDistance < profile.turboFoodRadius),
     };
   }
@@ -512,6 +544,14 @@ function createBots(playerSnake: Point[]) {
 }
 
 function getNextBotIndex(bots: BotSnake[]) {
+  const missingConfiguredBotIndex = BOT_CONFIGS.findIndex(
+    (config) => !bots.some((bot) => bot.name === config.name),
+  );
+
+  if (missingConfiguredBotIndex >= 0) {
+    return missingConfiguredBotIndex;
+  }
+
   const difficultyCounts = bots.reduce<Record<BotDifficulty, number>>(
     (counts, bot) => ({
       ...counts,
@@ -531,7 +571,8 @@ function getNextBotIndex(bots: BotSnake[]) {
 
 function createBot(index: number, playerSnake: Point[], existingBots: BotSnake[]) {
   let head = randomArenaPoint(HEAD_RADIUS + 260);
-  const difficulty = BOT_DIFFICULTIES[index % BOT_DIFFICULTIES.length];
+  const botConfig = BOT_CONFIGS[index % BOT_CONFIGS.length];
+  const difficulty = botConfig.difficulty;
 
   while (
     distance(head, playerSnake[0]) < 900 ||
@@ -542,12 +583,22 @@ function createBot(index: number, playerSnake: Point[], existingBots: BotSnake[]
 
   const angle = Math.random() * Math.PI * 2;
   const usedSkinIds = new Set(existingBots.map((bot) => bot.skinId));
-  const skin = SNAKE_SKINS.find((candidate) => !usedSkinIds.has(candidate.id)) ?? SNAKE_SKINS[0];
+  const configuredSkin = SNAKE_SKINS.find((candidate) => candidate.id === botConfig.skinId);
+  const skin =
+    configuredSkin ??
+    SNAKE_SKINS.find((candidate) => !usedSkinIds.has(candidate.id)) ??
+    SNAKE_SKINS[0];
 
   return {
     id: Date.now() + index + Math.floor(Math.random() * 100000),
-    name: BOT_NAMES[index % BOT_NAMES.length],
+    name: botConfig.name,
     difficulty,
+    personality: botConfig.personality,
+    headType: botConfig.headType ?? "circle",
+    headImage: botConfig.headImage,
+    soundSrc: botConfig.soundSrc,
+    bodyColor: botConfig.bodyColor,
+    secondaryColor: botConfig.secondaryColor,
     skinId: skin.id,
     snake: createSnakeLine(head.x, head.y, angle, BOT_INITIAL_LENGTH),
     angle,

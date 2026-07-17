@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { PagePanel } from "@/components/page-panel";
+import { ProfileClient } from "./profile-client";
 
 export default function ProfilePage() {
   return (
@@ -7,8 +8,10 @@ export default function ProfilePage() {
       <PagePanel
         eyebrow="Perfil"
         title="Jugador"
-        description="Página base para avatar, progreso, estadísticas y preferencias de la cuenta familiar."
-      />
+        description="Tu personaje local: nombre, titulo, rango, monedas, estrellas, skin, mundo y cosmeticos."
+      >
+        <ProfileClient />
+      </PagePanel>
     </AppShell>
   );
 }

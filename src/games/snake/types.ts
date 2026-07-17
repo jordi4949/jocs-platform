@@ -1,4 +1,5 @@
 import type { SnakeSkin } from "@/data/skins";
+import type { WorldTheme } from "@/types/worlds";
 
 export type Direction = "up" | "down" | "left" | "right";
 
@@ -32,6 +33,8 @@ export type BotSnake = {
   headType: BotHeadType;
   headImage?: string;
   soundSrc?: string;
+  bodyColor?: string;
+  secondaryColor?: string;
   skinId: string;
   snake: Point[];
   angle: number;
@@ -69,6 +72,7 @@ export type SnakeRenderSnapshot = SnakeGameState & {
   segmentRadius: number;
   headRadius: number;
   skin: SnakeSkin;
+  worldTheme: WorldTheme;
   bestScore: number;
   turboActive: boolean;
   turboEnergy: number;

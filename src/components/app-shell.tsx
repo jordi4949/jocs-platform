@@ -4,6 +4,9 @@ import { logoutAction } from "@/app/actions";
 const navItems = [
   { href: "/", label: "Inicio" },
   { href: "/game/snake", label: "Snake" },
+  { href: "/game/chess", label: "Ajedrez" },
+  { href: "/academy/german", label: "Alemán" },
+  { href: "/worlds", label: "Mundos" },
   { href: "/shop", label: "Tienda" },
   { href: "/missions", label: "Misiones" },
   { href: "/profile", label: "Perfil" },
@@ -35,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </form>
           </div>
 
-          <nav className="mt-4 grid grid-cols-2 gap-2 text-sm font-bold sm:grid-cols-3 lg:grid-cols-6">
+          <nav className="mt-4 grid grid-cols-2 gap-2 text-sm font-bold sm:grid-cols-4 lg:grid-cols-9">
             {navItems.map((item) => (
               <Link
                 className="rounded-lg border border-moss/15 bg-mist px-3 py-2 text-center text-ink transition hover:border-moss hover:bg-white"

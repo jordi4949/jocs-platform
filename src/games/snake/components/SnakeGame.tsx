@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSkinById } from "@/data/skins";
+import { getWorldById } from "@/data/worlds";
+import { ThemeMusicPlayer } from "@/components/ThemeMusicPlayer";
 import {
   createInitialSnakeState,
   HEAD_RADIUS,
@@ -18,10 +20,12 @@ import type { Direction, SnakeGameState } from "@/games/snake/types";
 import {
   addCoins,
   getActiveSkinId,
+  getActiveWorld,
   getBestScore,
   getCoins,
   setBestScore,
 } from "@/lib/storage";
+import type { WorldId } from "@/types/worlds";
 
 const TURBO_DRAIN_PER_SECOND = 44;
 const TURBO_RECHARGE_PER_SECOND = 24;
@@ -31,6 +35,7 @@ export function SnakeGame() {
   const [coins, setCoins] = useState(0);
   const [bestScore, setStoredBestScore] = useState(0);
   const [activeSkinId, setActiveSkinId] = useState("classic_green");
+  const [activeWorldId, setActiveWorldId] = useState<WorldId>("classic_arena");
   const [turboPressed, setTurboPressed] = useState(false);
   const [turboEnergy, setTurboEnergy] = useState(100);
 
@@ -39,6 +44,8 @@ export function SnakeGame() {
   const turboEnergyRef = useRef(turboEnergy);
   const syncedCoinsEarnedRef = useRef(0);
   const lastFrameRef = useRef<number | null>(null);
+  const botAudioRef = useRef<Record<string, HTMLAudioElement | null>>({});
+  const botSoundCooldownRef = useRef<Record<string, number>>({});
 
   const resetGame = useCallback(() => {
     const freshState = createInitialSnakeState();
@@ -46,6 +53,7 @@ export function SnakeGame() {
     gameStateRef.current = freshState;
     lastFrameRef.current = null;
     turboEnergyRef.current = 100;
+    botSoundCooldownRef.current = {};
     setGameState(freshState);
     setTurboPressed(false);
     setTurboEnergy(100);
@@ -59,10 +67,45 @@ export function SnakeGame() {
     });
   }, []);
 
+  const maybePlayBotSound = useCallback((state: SnakeGameState, timestamp: number) => {
+    const bot = state.bots.find((candidate) => candidate.soundSrc);
+
+    if (!bot?.soundSrc || state.status !== "playing") {
+      return;
+    }
+
+    const head = state.snake[0];
+    const botHead = bot.snake[0];
+    const botDistance = Math.hypot(head.x - botHead.x, head.y - botHead.y);
+
+    if (botDistance > 620 || timestamp < (botSoundCooldownRef.current[bot.name] ?? 0)) {
+      return;
+    }
+
+    botSoundCooldownRef.current[bot.name] = timestamp + 4500;
+
+    try {
+      if (botAudioRef.current[bot.name] === undefined) {
+        const audio = new Audio(bot.soundSrc);
+        audio.preload = "auto";
+        botAudioRef.current[bot.name] = audio;
+      }
+
+      const audio = botAudioRef.current[bot.name];
+      if (audio) {
+        audio.currentTime = 0;
+        void audio.play().catch(() => undefined);
+      }
+    } catch {
+      botAudioRef.current[bot.name] = null;
+    }
+  }, []);
+
   useEffect(() => {
     setCoins(getCoins());
     setStoredBestScore(getBestScore());
     setActiveSkinId(getActiveSkinId());
+    setActiveWorldId(getActiveWorld());
   }, []);
 
   useEffect(() => {
@@ -117,6 +160,7 @@ export function SnakeGame() {
       setGameState((currentState) => {
         const nextState = stepSnakeGame(currentState, deltaSeconds, canTurbo);
         gameStateRef.current = nextState;
+        maybePlayBotSound(nextState, timestamp);
         return nextState;
       });
 
@@ -126,7 +170,7 @@ export function SnakeGame() {
     animationFrameId = window.requestAnimationFrame(tick);
 
     return () => window.cancelAnimationFrame(animationFrameId);
-  }, []);
+  }, [maybePlayBotSound]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -161,6 +205,7 @@ export function SnakeGame() {
   }, [move]);
 
   const activeSkin = useMemo(() => getSkinById(activeSkinId), [activeSkinId]);
+  const activeWorld = useMemo(() => getWorldById(activeWorldId), [activeWorldId]);
   const turboActive = turboPressed && turboEnergy > 0 && gameState.status === "playing";
 
   const snapshot = {
@@ -170,6 +215,7 @@ export function SnakeGame() {
     segmentRadius: SEGMENT_RADIUS,
     headRadius: HEAD_RADIUS,
     skin: activeSkin,
+    worldTheme: activeWorld,
     bestScore,
     turboActive,
     turboEnergy,
@@ -186,7 +232,17 @@ export function SnakeGame() {
         score={gameState.score}
         skinName={activeSkin.name}
         turboEnergy={turboEnergy}
+        worldName={activeWorld.name}
       />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#0c1713] p-3 text-white">
+        <div className="min-w-0">
+          <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-white/45">
+            Mundo activo
+          </p>
+          <p className="mt-1 truncate text-base font-black">{activeWorld.name}</p>
+        </div>
+        <ThemeMusicPlayer world={activeWorld} />
+      </div>
       <GameCanvas snapshot={snapshot} />
       <TouchControls onDirection={move} onTurboChange={setTurboPressed} />
       <p className="sr-only">

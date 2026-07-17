@@ -7,6 +7,7 @@ type GameHUDProps = {
   bestScore: number;
   botsAlive: number;
   skinName: string;
+  worldName: string;
   turboEnergy: number;
   onReset: () => void;
 };
@@ -18,18 +19,20 @@ export function GameHUD({
   bestScore,
   botsAlive,
   skinName,
+  worldName,
   turboEnergy,
   onReset,
 }: GameHUDProps) {
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
-      <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 xl:grid-cols-7">
         <HudStat label="Puntos" value={score} />
         <HudStat label="Monedas" value={coins} />
         <HudStat label="Partida" value={`+${coinsEarned}`} />
         <HudStat label="Mejor" value={bestScore} />
         <HudStat label="Bots" value={botsAlive} />
         <HudStat label="Skin" value={skinName} />
+        <HudStat label="Mundo" value={worldName} />
       </div>
 
       <div className="flex items-center gap-3">
